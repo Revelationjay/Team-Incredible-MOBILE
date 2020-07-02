@@ -24,7 +24,7 @@ class HomeScreen extends StatelessWidget {
       floatingActionButton: FloatingActionButton(
         //Navigate to add reminders screen
         onPressed: () {
-          navigation.pushTo(context,
+          navigation.pushToAndReplace(context,
               RemindersScreen(buttonText: 'Add Schedule', refresh: true));
         },
         backgroundColor: Theme.of(context).buttonColor,
@@ -65,7 +65,7 @@ class _CustomHomeScreenState extends State<CustomHomeScreen> {
             background: Image(
                 height: config.yMargin(context, 5),
                 width: config.xMargin(context, 18),
-                image: AssetImage('images/medbuzz.png')),
+                image: AssetImage('images/medbuzz-3.png')),
             centerTitle: true,
             title: Text('My Schedules',
                 style: Theme.of(context).textTheme.headline6.copyWith(
@@ -83,7 +83,9 @@ class _CustomHomeScreenState extends State<CustomHomeScreen> {
               sliver: SliverGrid.count(
                 crossAxisCount: 2,
                 children: db.schedules.map((e) {
-                  return  Row(
+                  return db.schedules.length == 0
+                      ? Center(child: Text('No schedule'))
+                      : Row(
                           children: <Widget>[
                             Container(
                               width: MediaQuery.of(context).size.width * .45,
@@ -91,7 +93,7 @@ class _CustomHomeScreenState extends State<CustomHomeScreen> {
                               child: FlatButton(
                                 //Navigate to drug description screen
                                 onPressed: () {
-                                  Navigation().pushTo(context,
+                                  Navigation().pushToAndReplace(context,
                                       DrugsDescriptionScreen(schedule: e));
                                 },
                                 shape: RoundedRectangleBorder(
@@ -120,7 +122,9 @@ class _CustomHomeScreenState extends State<CustomHomeScreen> {
                                                                   context, 1.5),
                                                         ),
                                       Text(
-                                        e.drugName == null ? 'Set a schedule' : '${e.drugName}',
+                                        e.drugName == null
+                                            ? 'Set a schedule'
+                                            : '${e.drugName}',
                                         overflow: TextOverflow.ellipsis,
                                         style: TextStyle(
                                           fontSize: config.textSize(context, 7),
@@ -137,9 +141,7 @@ class _CustomHomeScreenState extends State<CustomHomeScreen> {
                                         children: <Widget>[
                                           Expanded(
                                             child: Text(
-                                              e.dosage == 1
-                                                  ? '${e.dosage} ${e.drugType.toLowerCase()} ${e.frequency.toLowerCase()} daily'
-                                                  : '${e.dosage} ${e.drugType.toLowerCase()}s ${e.frequency.toLowerCase()} daily',
+                                             db.scheduleDescription(e),
                                               textAlign: TextAlign.center,
                                               overflow: TextOverflow.ellipsis,
                                               style: TextStyle(
@@ -173,4 +175,3 @@ class _CustomHomeScreenState extends State<CustomHomeScreen> {
     );
   }
 }
-

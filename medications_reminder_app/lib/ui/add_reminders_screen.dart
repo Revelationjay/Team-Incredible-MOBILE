@@ -46,6 +46,7 @@ class _RemindersState extends State<Reminders> {
     super.initState();
     //Whether to populate fields with data from DB (in the case of editing a schedule)
     //or to set all fields to their default values (in the case of adding a schedule)
+    index = Provider.of<DB>(context, listen: false).scheduleLength;
     widget.refresh
         ? Provider.of<DB>(context, listen: false).refresh()
         : Provider.of<DB>(context, listen: false).preload(
@@ -72,6 +73,8 @@ class _RemindersState extends State<Reminders> {
 
   TextEditingController nameController = TextEditingController();
   FocusNode focusNode = FocusNode();
+  int index;
+  String newIndex = DateTime.now().toString();
   @override
   Widget build(BuildContext context) {
     final db = Provider.of<DB>(context);
@@ -329,16 +332,13 @@ class _RemindersState extends State<Reminders> {
                                 width: MediaQuery.of(context).size.width,
                                 child: FlatButton(
                                   //Navigate to home screen after saving details in db
-                                  onPressed: () {
+                                  onPressed: () async{
                                     if (nameController.text.isNotEmpty) {
-                                      print(db.firstTime);
-                                      print(db.secondTime);
-                                      print(db.thirdTime);
-
                                       switch (widget.buttonText) {
                                         case 'Add Schedule':
-                                          db.addSchedule(Schedule(
-                                            index: db.scheduleLength,
+                                          await db.addSchedule(newIndex, Schedule(
+                                            id: index,
+                                            index: newIndex,
                                             drugName: nameController.text,
                                             drugType:
                                                 db.drugTypes[db.selectedIndex],
@@ -363,28 +363,27 @@ class _RemindersState extends State<Reminders> {
                                                   ]
                                                 : [],
                                           ));
-                                          var configdb = db;
                                           List<TimeOfDay> times2 = [
                                             //widget.schedule.firstTime as int
-                                            configdb.firstTime,
-                                            configdb.secondTime
+                                            db.firstTime,
+                                            db.secondTime
                                           ];
                                           List<TimeOfDay> times3 = [
-                                            configdb.firstTime,
-                                            configdb.secondTime,
-                                            configdb.thirdTime
+                                            db.firstTime,
+                                            db.secondTime,
+                                            db.thirdTime
                                           ];
-                                          if (configdb.selectedFreq == 'Once') {
+                                          if (db.selectedFreq == 'Once') {
                                             scheduleNotifications(
-                                                configdb.firstTime,
+                                                db.firstTime,
                                                 db,
                                                 notificationManager);
-                                          } else if (configdb.selectedFreq ==
+                                          } else if (db.selectedFreq ==
                                               'Twice') {
                                             times2.forEach((val) =>
                                                 scheduleNotifications(val, db,
                                                     notificationManager));
-                                          } else if (configdb.selectedFreq ==
+                                          } else if (db.selectedFreq ==
                                               'Thrice') {
                                             times3.forEach((val) =>
                                                 scheduleNotifications(val, db,
@@ -392,8 +391,9 @@ class _RemindersState extends State<Reminders> {
                                           }
                                           break;
                                         case 'Update Schedule':
-                                          db.editSchedule(
+                                         await db.editSchedule(
                                               schedule: Schedule(
+                                                id: widget.schedule.id,
                                             index: widget.schedule.index,
                                             drugName: nameController.text,
                                             drugType:
@@ -420,7 +420,7 @@ class _RemindersState extends State<Reminders> {
                                                 : [],
                                           ));
                                           notificationManager.removeReminder(
-                                              widget.schedule.index);
+                                              widget.schedule.id);
                                           List<TimeOfDay> times2 = [
                                             //widget.schedule.firstTime as int
                                             db.firstTime,
@@ -684,30 +684,11 @@ class _RemindersState extends State<Reminders> {
 
   void scheduleNotifications(
       TimeOfDay time, DB db, NotificationManager manager) {
-    if (DateTime.now().day <= db.startDate.day &&
-        db.endDate.compareTo(DateTime.now()) >= 0) {
       manager.showNotificationDaily(
-          db.scheduleLength,
-          'Drug: ' + nameController.text + '.',
-         'Dosage: ' + db.dosage.toString(),
+          db.getUniqueId(time),
+          'Time for your medication!',
+         'Medication: ${nameController.text}\nDosage: ${db.dosage.toString()}',
           time.hour,
           time.minute);
-    } else if (DateTime.now().day >= db.startDate.day &&
-        db.endDate.compareTo(DateTime.now()) >= 0) {
-      manager.showNotificationDaily(
-          db.scheduleLength,
-         'Drug: ' + nameController.text + '.',
-         'Dosage: ' + db.dosage.toString(),
-          time.hour,
-          time.minute);
-    } else if (DateTime.now().day == db.startDate.day &&
-        DateTime.now().day == db.endDate.day) {
-      manager.showNotificationDaily(
-          db.scheduleLength,
-          'Drug: ' + nameController.text + '.',
-         'Dosage: ' + db.dosage.toString(),
-          time.hour,
-          time.minute);
-    }
   }
 }

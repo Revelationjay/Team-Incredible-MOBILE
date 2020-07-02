@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'dart:math';
 import 'package:medications_reminder_app/model/schedule_model.dart';
 
 class DB extends ChangeNotifier {
@@ -18,6 +19,30 @@ class DB extends ChangeNotifier {
   String drugName;
 
   List<Schedule> schedules = [];
+
+  int getUniqueId(TimeOfDay time){
+    return int.parse('${time.hour}${time.minute}${this.schedules.length}${Random().nextInt(90)+1}');
+  }
+
+  String scheduleDescription(Schedule schedule){
+    String description;
+    switch (schedule.drugType) {
+      case 'Injection':
+         if(schedule.dosage == 1){
+           description = '${schedule.dosage} shot ${schedule.frequency.toLowerCase()} daily';
+         }else{
+          description = '${schedule.dosage} shots ${schedule.frequency.toLowerCase()} daily';
+         }                                         
+        break;
+      default:
+      if(schedule.dosage == 1){
+           description = '${schedule.dosage} ${schedule.drugType.toLowerCase()} ${schedule.frequency.toLowerCase()} daily';
+         }else{
+          description = '${schedule.dosage} ${schedule.drugType.toLowerCase()}s ${schedule.frequency.toLowerCase()} daily';
+         }  
+    }
+    return description;
+  }
 
   bool isToday(){
     return this.startDate.difference(DateTime.now()) == 0;
@@ -166,10 +191,10 @@ class DB extends ChangeNotifier {
     return schedules[index];
   }
 
-  void addSchedule(Schedule schedule) async {
+  Future<void> addSchedule(String index, Schedule schedule) async {
 
     var box = Hive.box<Schedule>(_boxName);
-    await box.add(schedule);
+    await box.put(index, schedule);
 
     this.schedules = box.values.toList();
     box.close();
@@ -183,17 +208,17 @@ class DB extends ChangeNotifier {
     
 
     this.schedules = box.values.toList();
-    box.deleteAt(key);
+    box.delete(key);
      box.close();
 
     notifyListeners();
       
   }
 
-  void editSchedule({Schedule schedule}) {
-     int scheduleKey = schedule.index;
+  Future<void> editSchedule({Schedule schedule}) async{
+     String scheduleKey = schedule.index;
     var box = Hive.box<Schedule>(_boxName);
-     box.putAt(scheduleKey, schedule);
+     await box.put(scheduleKey, schedule);
 
     this.schedules = box.values.toList();
      box.close();
